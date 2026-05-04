@@ -1,0 +1,23 @@
+import subprocess
+
+experiments = [
+    {"latent_dim": 10, "hidden_dim": 256, "lr": 0.001, "batch_size": 128},
+    {"latent_dim": 20, "hidden_dim": 400, "lr": 0.001, "batch_size": 128},
+    {"latent_dim": 50, "hidden_dim": 400, "lr": 0.001, "batch_size": 128},
+    {"latent_dim": 20, "hidden_dim": 256, "lr": 0.0005, "batch_size": 128},
+    {"latent_dim": 20, "hidden_dim": 512, "lr": 0.001, "batch_size": 128},
+]
+
+for exp in experiments:
+    command = [
+        "python",
+        "cvae_mnist.py",
+        "--latent_dim", str(exp["latent_dim"]),
+        "--hidden_dim", str(exp["hidden_dim"]),
+        "--lr", str(exp["lr"]),
+        "--batch_size", str(exp["batch_size"]),
+        "--epochs", "10"
+    ]
+
+    print("Running experiment:", exp)
+    subprocess.run(command)
