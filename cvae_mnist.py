@@ -1,6 +1,8 @@
 import os
 import csv
+import json
 import argparse
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -81,6 +83,23 @@ def loss_function(x_hat, x, mu, logvar, beta=1.0):
     return total_loss, recon_loss, kl_loss
 
 
+def save_config(args, output_dir):
+    config = {
+        "latent_dim": args.latent_dim,
+        "hidden_dim": args.hidden_dim,
+        "learning_rate": args.lr,
+        "batch_size": args.batch_size,
+        "epochs": args.epochs,
+        "beta": args.beta,
+        "dropout": args.dropout
+    }
+
+    config_path = os.path.join(output_dir, "config.json")
+
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=4)
+
+
 def run_one_epoch(model, dataloader, optimizer, device, beta=1.0, train=True):
     if train:
         model.train()
@@ -101,7 +120,11 @@ def run_one_epoch(model, dataloader, optimizer, device, beta=1.0, train=True):
         with torch.set_grad_enabled(train):
             x_hat, mu, logvar = model(x, y)
             total_loss, recon_loss, kl_loss = loss_function(
-                x_hat, x, mu, logvar, beta=beta
+                x_hat,
+                x,
+                mu,
+                logvar,
+                beta=beta
             )
 
             if train:
@@ -142,6 +165,26 @@ def generate_digit_grid(model, device, latent_dim, output_dir, epoch):
         )
 
 
+def save_reconstruction_grid(model, dataloader, device, output_dir, epoch):
+    model.eval()
+
+    with torch.no_grad():
+        x, y = next(iter(dataloader))
+
+        x = x[:10].to(device)
+        y = y[:10].to(device)
+
+        x_hat, _, _ = model(x, y)
+
+        comparison = torch.cat([x.cpu(), x_hat.cpu()], dim=0)
+
+        save_image(
+            comparison,
+            os.path.join(output_dir, f"reconstruction_epoch_{epoch}.png"),
+            nrow=10
+        )
+
+
 def latent_interpolation_same_label(model, device, latent_dim, output_dir, digit=3):
     model.eval()
 
@@ -153,7 +196,8 @@ def latent_interpolation_same_label(model, device, latent_dim, output_dir, digit
 
         for alpha in torch.linspace(0, 1, steps=10).to(device):
             z = (1 - alpha) * z1 + alpha * z2
-            label = torch.tensor([digit]).to(device)
+            label = torch.tensor([digit], dtype=torch.long).to(device)
+
             img = model.decode(z, label)
             images.append(img)
 
@@ -175,7 +219,7 @@ def label_interpolation_fixed_latent(model, device, latent_dim, output_dir):
         images = []
 
         for digit in range(10):
-            label = torch.tensor([digit]).to(device)
+            label = torch.tensor([digit], dtype=torch.long).to(device)
             img = model.decode(z, label)
             images.append(img)
 
@@ -186,6 +230,45 @@ def label_interpolation_fixed_latent(model, device, latent_dim, output_dir):
             os.path.join(output_dir, "same_latent_different_labels.png"),
             nrow=10
         )
+
+
+def visualize_latent_space(model, dataloader, device, output_dir):
+    if model.latent_dim != 2:
+        print("Skipping latent space visualization because latent_dim is not 2.")
+        return
+
+    model.eval()
+
+    all_mu = []
+    all_labels = []
+
+    with torch.no_grad():
+        for x, y in dataloader:
+            x = x.to(device)
+            y = y.to(device)
+
+            mu, _ = model.encode(x, y)
+
+            all_mu.append(mu.cpu())
+            all_labels.append(y.cpu())
+
+    all_mu = torch.cat(all_mu, dim=0).numpy()
+    all_labels = torch.cat(all_labels, dim=0).numpy()
+
+    plt.figure(figsize=(8, 6))
+    scatter = plt.scatter(
+        all_mu[:, 0],
+        all_mu[:, 1],
+        c=all_labels,
+        s=5,
+        alpha=0.7
+    )
+    plt.colorbar(scatter)
+    plt.xlabel("Latent Dimension 1")
+    plt.ylabel("Latent Dimension 2")
+    plt.title("2D Latent Space Visualization")
+    plt.savefig(os.path.join(output_dir, "latent_space.png"))
+    plt.close()
 
 
 def plot_losses(log_path, output_dir):
@@ -285,6 +368,7 @@ def append_experiment_summary(args, output_dir, final_train, final_val):
 
 def train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
 
     experiment_name = (
         f"latent{args.latent_dim}_hidden{args.hidden_dim}_"
@@ -293,6 +377,8 @@ def train(args):
 
     output_dir = os.path.join("results", experiment_name)
     os.makedirs(output_dir, exist_ok=True)
+
+    save_config(args, output_dir)
 
     transform = transforms.ToTensor()
 
@@ -347,6 +433,8 @@ def train(args):
         ])
 
     best_val_loss = float("inf")
+    final_train_losses = None
+    final_val_losses = None
 
     for epoch in range(1, args.epochs + 1):
         train_losses = run_one_epoch(
@@ -366,6 +454,9 @@ def train(args):
             beta=args.beta,
             train=False
         )
+
+        final_train_losses = train_losses
+        final_val_losses = val_losses
 
         print(
             f"Epoch [{epoch}/{args.epochs}] "
@@ -390,6 +481,7 @@ def train(args):
             ])
 
         generate_digit_grid(model, device, args.latent_dim, output_dir, epoch)
+        save_reconstruction_grid(model, val_loader, device, output_dir, epoch)
 
         if val_losses["total_loss"] < best_val_loss:
             best_val_loss = val_losses["total_loss"]
@@ -418,13 +510,20 @@ def train(args):
         output_dir
     )
 
+    visualize_latent_space(
+        model,
+        val_loader,
+        device,
+        output_dir
+    )
+
     plot_losses(log_path, output_dir)
 
     append_experiment_summary(
         args,
         output_dir,
-        train_losses,
-        val_losses
+        final_train_losses,
+        final_val_losses
     )
 
     print(f"Experiment saved to: {output_dir}")
