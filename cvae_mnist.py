@@ -2,7 +2,9 @@ import os
 import csv
 import json
 import argparse
+import random
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -75,6 +77,19 @@ class CVAE(nn.Module):
         return x_hat, mu, logvar
 
 
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
 def loss_function(x_hat, x, mu, logvar, beta=1.0):
     recon_loss = F.binary_cross_entropy(x_hat, x, reduction="sum")
     kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
@@ -91,7 +106,8 @@ def save_config(args, output_dir):
         "batch_size": args.batch_size,
         "epochs": args.epochs,
         "beta": args.beta,
-        "dropout": args.dropout
+        "dropout": args.dropout,
+        "seed": args.seed
     }
 
     config_path = os.path.join(output_dir, "config.json")
@@ -340,6 +356,7 @@ def append_experiment_summary(args, output_dir, final_train, final_val):
                 "epochs",
                 "beta",
                 "dropout",
+                "seed",
                 "final_train_total_loss",
                 "final_train_recon_loss",
                 "final_train_kl_loss",
@@ -357,6 +374,7 @@ def append_experiment_summary(args, output_dir, final_train, final_val):
             args.epochs,
             args.beta,
             args.dropout,
+            args.seed,
             final_train["total_loss"],
             final_train["recon_loss"],
             final_train["kl_loss"],
@@ -367,12 +385,15 @@ def append_experiment_summary(args, output_dir, final_train, final_val):
 
 
 def train(args):
+    set_seed(args.seed)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
+    print(f"Using random seed: {args.seed}")
 
     experiment_name = (
         f"latent{args.latent_dim}_hidden{args.hidden_dim}_"
-        f"lr{args.lr}_beta{args.beta}_dropout{args.dropout}"
+        f"lr{args.lr}_beta{args.beta}_dropout{args.dropout}_seed{args.seed}"
     )
 
     output_dir = os.path.join("results", experiment_name)
@@ -395,7 +416,7 @@ def train(args):
     train_data, val_data = random_split(
         full_train_data,
         [train_size, val_size],
-        generator=torch.Generator().manual_seed(42)
+        generator=torch.Generator().manual_seed(args.seed)
     )
 
     train_loader = DataLoader(
@@ -539,6 +560,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--beta", type=float, default=1.0)
     parser.add_argument("--dropout", type=float, default=0.0)
+    parser.add_argument("--seed", type=int, default=42)
 
     args = parser.parse_args()
 
