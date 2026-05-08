@@ -46,8 +46,6 @@ I added the `beta` parameter so I can control how much the KL loss matters. This
 
 ## Extra Criteria
 
-After receiving feedback that the original project was too simple, I made the project more focused on experimentation.
-
 The main extra criterion is hyperparameter tuning. I trained multiple CVAE models with different settings and compared their results.
 
 The experiments compare:
@@ -233,21 +231,3 @@ The latent dimension controls the size of the latent space. A very small latent 
 The beta value controls how strongly the KL divergence affects training. A lower beta can sometimes make generated digits look clearer because the model focuses more on reconstruction. A higher beta puts more pressure on the latent space to follow a normal distribution.
 
 This helped me compare how different model settings affect both the loss values and the generated images.
-
-## Reproducibility
-
-I added random seed support so experiments are easier to reproduce and compare.
-
-The default seed is:
-
-```text
-42
-```
-
-The seed is saved in each experiment's `config.json` file.
-
-## Notes
-
-This project focuses on implementing and analyzing a generative model from scratch. The goal is not to produce perfect images. The goal is to show that the model learns to generate recognizable digit images, and to understand how different hyperparameters affect the results.
-
-VAEs often produce blurry images, so some blur is expected. The generated digits still show that the model learned the structure of handwritten numbers and can use labels to control the output.
