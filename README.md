@@ -208,26 +208,32 @@ latent_space.png
 
 ## Results Explanation
 
-The generated digit grids show that the CVAE can generate recognizable digits from labels. The images are somewhat blurry, which is expected for a VAE. The important part is that the generated images look like handwritten digits and generally follow the target labels.
+The generated digit grids show that the CVAE is able to create digits based on the labels I give it. The images are not perfectly sharp, but that is normal for a VAE. The main point is that the outputs look like handwritten digits and mostly match the target labels.
 
-The reconstruction images compare original MNIST images with reconstructed images. This helps show whether the encoder and decoder are learning a useful representation.
+The reconstruction images compare the original MNIST digits with the model’s reconstructed versions. This helps show whether the encoder and decoder are actually learning useful information from the images.
 
-The interpolation image shows how the model moves through latent space. This helps show whether the latent space is smooth.
+The interpolation image shows how the output changes when the model moves between two points in the latent space. If the change looks smooth, it suggests that the model learned a somewhat smooth latent space.
 
-The `same_latent_different_labels.png` output shows how the same latent vector can generate different digits when the label changes. This is useful because it shows that the conditioning label has a real effect on generation.
+The `same_latent_different_labels.png` image is also useful because it keeps the same latent vector but changes the label. This shows that the label is actually affecting the output, not just being ignored by the model.
 
-The loss curves show how training and validation loss change over time.
+The loss curves show how the training and validation losses changed over time. I used them to check whether the model was still improving and whether the validation loss followed a reasonable pattern.
 
-The classifier-based evaluation gives a simple numerical check of whether the generated images match their intended labels.
+The classifier-based evaluation gives a simple numerical way to check the generated images. If the CVAE is asked to generate a 5, and the classifier also predicts it as a 5, then that is counted as a successful generation.
 
 ## Hyperparameter Tuning
 
-I tested several different settings instead of training only one model.
+Instead of training only one model, I tested a few different settings to see how they affected the results.
 
-The main things I changed were latent dimension and beta.
+The main things I changed were the latent dimension and the beta value. The latent dimension controls how much information the model can store in the latent space. A smaller latent dimension is easier to visualize, but it may not have enough space to capture all the details. A larger latent dimension gives the model more room, but it can also make the latent space harder to understand.
 
-The latent dimension controls the size of the latent space. A very small latent dimension can make the model easier to visualize, but it may limit generation quality. A larger latent dimension can store more information, but it may also make the latent space harder to analyze.
+The beta value controls how much weight is placed on the KL divergence part of the loss. A lower beta makes the model focus more on reconstruction, which can sometimes make the digits look clearer. A higher beta puts more pressure on the latent space to follow a normal distribution.
 
-The beta value controls how strongly the KL divergence affects training. A lower beta can sometimes make generated digits look clearer because the model focuses more on reconstruction. A higher beta puts more pressure on the latent space to follow a normal distribution.
+By comparing these experiments, I could see how different settings affected the loss values, reconstruction quality, and generated images.
 
-This helped me compare how different model settings affect both the loss values and the generated images.
+## Difficulties
+
+One difficulty I faced was managing all the experiment outputs after adding hyperparameter tuning. Since each experiment saves generated images, reconstruction images, loss curves, config files, and CSV logs, the `results/` folder can quickly become messy. At first, it was hard to keep track of which result came from which setting.
+
+To solve this, I made each experiment save into its own folder named with the main hyperparameters, such as latent dimension, beta value, dropout, and seed. I also saved a `config.json` file inside each experiment folder, so I could easily check what settings were used. This made it much easier to compare experiments later and avoid mixing up results.
+
+Another challenge was deciding how to evaluate the generated images. Looking at the images by eye is useful, but it is also subjective. To make the evaluation more concrete, I trained a small MNIST classifier and used it to check whether the generated images matched their intended labels. This gave me a simple numerical way to compare how well the conditional generation worked.
