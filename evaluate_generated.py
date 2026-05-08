@@ -9,11 +9,23 @@ from cvae_mnist import CVAE
 from mnist_classifier import MNISTClassifier
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def get_device():
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return torch.device("mps")
+
+    return torch.device("cpu")
+
+
+device = get_device()
 
 
 def evaluate_generated_images(args):
     os.makedirs(args.output_dir, exist_ok=True)
+
+    print(f"Using device: {device}")
 
     model = CVAE(
         latent_dim=args.latent_dim,

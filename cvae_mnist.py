@@ -77,6 +77,16 @@ class CVAE(nn.Module):
         return x_hat, mu, logvar
 
 
+def get_device():
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return torch.device("mps")
+
+    return torch.device("cpu")
+
+
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -86,8 +96,9 @@ def set_seed(seed):
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    if hasattr(torch.backends, "cudnn"):
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 
 def loss_function(x_hat, x, mu, logvar, beta=1.0):
@@ -175,7 +186,7 @@ def generate_digit_grid(model, device, latent_dim, output_dir, epoch):
         images = torch.cat(images, dim=0)
 
         save_image(
-            images,
+            images.cpu(),
             os.path.join(output_dir, f"digit_grid_epoch_{epoch}.png"),
             nrow=10
         )
@@ -220,7 +231,7 @@ def latent_interpolation_same_label(model, device, latent_dim, output_dir, digit
         images = torch.cat(images, dim=0)
 
         save_image(
-            images,
+            images.cpu(),
             os.path.join(output_dir, f"latent_interpolation_digit_{digit}.png"),
             nrow=10
         )
@@ -242,7 +253,7 @@ def label_interpolation_fixed_latent(model, device, latent_dim, output_dir):
         images = torch.cat(images, dim=0)
 
         save_image(
-            images,
+            images.cpu(),
             os.path.join(output_dir, "same_latent_different_labels.png"),
             nrow=10
         )
@@ -387,7 +398,7 @@ def append_experiment_summary(args, output_dir, final_train, final_val):
 def train(args):
     set_seed(args.seed)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_device()
     print(f"Using device: {device}")
     print(f"Using random seed: {args.seed}")
 

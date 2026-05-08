@@ -7,17 +7,7 @@ experiments = [
         "hidden_dim": 400,
         "lr": 0.001,
         "batch_size": 128,
-        "epochs": 10,
-        "beta": 1.0,
-        "dropout": 0.0,
-        "seed": 42
-    },
-    {
-        "latent_dim": 10,
-        "hidden_dim": 256,
-        "lr": 0.001,
-        "batch_size": 128,
-        "epochs": 10,
+        "epochs": 50,
         "beta": 1.0,
         "dropout": 0.0,
         "seed": 42
@@ -27,7 +17,27 @@ experiments = [
         "hidden_dim": 400,
         "lr": 0.001,
         "batch_size": 128,
-        "epochs": 10,
+        "epochs": 50,
+        "beta": 1.0,
+        "dropout": 0.0,
+        "seed": 42
+    },
+    {
+        "latent_dim": 20,
+        "hidden_dim": 400,
+        "lr": 0.001,
+        "batch_size": 128,
+        "epochs": 50,
+        "beta": 0.5,
+        "dropout": 0.0,
+        "seed": 42
+    },
+    {
+        "latent_dim": 10,
+        "hidden_dim": 400,
+        "lr": 0.001,
+        "batch_size": 128,
+        "epochs": 50,
         "beta": 1.0,
         "dropout": 0.0,
         "seed": 42
@@ -37,63 +47,10 @@ experiments = [
         "hidden_dim": 400,
         "lr": 0.001,
         "batch_size": 128,
-        "epochs": 10,
+        "epochs": 50,
         "beta": 1.0,
         "dropout": 0.0,
         "seed": 42
-    },
-    {
-        "latent_dim": 20,
-        "hidden_dim": 400,
-        "lr": 0.001,
-        "batch_size": 128,
-        "epochs": 10,
-        "beta": 0.5,
-        "dropout": 0.0,
-        "seed": 42
-    },
-    {
-        "latent_dim": 20,
-        "hidden_dim": 400,
-        "lr": 0.001,
-        "batch_size": 128,
-        "epochs": 10,
-        "beta": 2.0,
-        "dropout": 0.0,
-        "seed": 42
-    },
-    {
-        "latent_dim": 20,
-        "hidden_dim": 512,
-        "lr": 0.0005,
-        "batch_size": 128,
-        "epochs": 10,
-        "beta": 1.0,
-        "dropout": 0.1,
-        "seed": 42
-    },
-
-    # Same setup as baseline, but different seeds.
-    # This helps check whether the result is stable.
-    {
-        "latent_dim": 20,
-        "hidden_dim": 400,
-        "lr": 0.001,
-        "batch_size": 128,
-        "epochs": 10,
-        "beta": 1.0,
-        "dropout": 0.0,
-        "seed": 7
-    },
-    {
-        "latent_dim": 20,
-        "hidden_dim": 400,
-        "lr": 0.001,
-        "batch_size": 128,
-        "epochs": 10,
-        "beta": 1.0,
-        "dropout": 0.0,
-        "seed": 123
     }
 ]
 
@@ -115,4 +72,4 @@ for exp in experiments:
     print("\nRunning experiment:")
     print(exp)
 
-    subprocess.run(command)
+    subprocess.run(command, check=True)

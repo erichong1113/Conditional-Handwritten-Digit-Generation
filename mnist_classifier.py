@@ -8,7 +8,17 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def get_device():
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return torch.device("mps")
+
+    return torch.device("cpu")
+
+
+device = get_device()
 
 
 class MNISTClassifier(nn.Module):
@@ -51,6 +61,8 @@ def evaluate(model, dataloader):
 
 def train_classifier():
     os.makedirs("classifier", exist_ok=True)
+
+    print(f"Using device: {device}")
 
     transform = transforms.ToTensor()
 
